@@ -11,6 +11,7 @@ import com.clinic.service.interfaces.AuthenticationService;
 import com.clinic.service.interfaces.ClinicUserService;
 import com.clinic.service.interfaces.DoctorService;
 import com.clinic.service.interfaces.PatientService;
+import jakarta.persistence.EntityExistsException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -41,6 +42,10 @@ public class AuthController {
     @PostMapping(value = "/signup")
     @Transactional(rollbackFor = Exception.class)
     public UserDetailsInfo signUp(@RequestBody SignUpDto signUpDto) {
+        // check if username already exists
+        if (userService.usernameAlreadyExists(signUpDto.getUsername())) {
+            throw new EntityExistsException("This username is taken");
+        }
         // save user
         ClinicUserDto userDto = ClinicUserDto.builder()
                 .username(signUpDto.getUsername())
@@ -49,33 +54,41 @@ public class AuthController {
 
         ClinicUser user = userService.save(userMapper.toEntity(userDto));
         if (signUpDto.getIsDoctor()) { // doctor
-            DoctorDto doctorDto = DoctorDto.builder()
-                    .userId(user.getId())
-                    .email(signUpDto.getEmail())
-                    .phone(signUpDto.getPhone())
-                    .name(signUpDto.getFirstName() + " " + signUpDto.getLastName())
-                    .specialization(signUpDto.getSpecialization())
-                    .yearsOfExperience(signUpDto.getYearsOfExperience())
-                    .build();
+            DoctorDto doctorDto = buildDoctorDto(signUpDto, user);
             doctorService.save(doctorMapper.toEntity(doctorDto));
         } else { // patient
-            PatientDto patientDto = PatientDto.builder()
-                    .userId(user.getId())
-                    .email(signUpDto.getEmail())
-                    .phone(signUpDto.getPhone())
-                    .firstName(signUpDto.getFirstName())
-                    .lastName(signUpDto.getLastName())
-                    .address(signUpDto.getAddress())
-                    .gender(signUpDto.getGender())
-                    .dateOfBirth(signUpDto.getDateOfBirth())
-                    .emergencyContactName(signUpDto.getEmergencyContactName())
-                    .emergencyContactPhone(signUpDto.getEmergencyContactPhone())
-                    .build();
+            PatientDto patientDto = buildPatientDto(signUpDto, user);
             patientService.save(patientMapper.toEntity(patientDto));
         }
         SignInDto signInDto = new SignInDto();
         signInDto.setPassword(signUpDto.getPassword());
         signInDto.setUsername(signUpDto.getUsername());
         return authenticationService.authenticate(signInDto);
+    }
+
+    private DoctorDto buildDoctorDto(SignUpDto signUpDto, ClinicUser user) {
+        return DoctorDto.builder()
+                .userId(user.getId())
+                .email(signUpDto.getEmail())
+                .phone(signUpDto.getPhone())
+                .name(signUpDto.getFirstName() + " " + signUpDto.getLastName())
+                .specialization(signUpDto.getSpecialization())
+                .yearsOfExperience(signUpDto.getYearsOfExperience())
+                .build();
+    }
+
+    private PatientDto buildPatientDto(SignUpDto signUpDto, ClinicUser user) {
+        return PatientDto.builder()
+                .userId(user.getId())
+                .email(signUpDto.getEmail())
+                .phone(signUpDto.getPhone())
+                .firstName(signUpDto.getFirstName())
+                .lastName(signUpDto.getLastName())
+                .address(signUpDto.getAddress())
+                .gender(signUpDto.getGender())
+                .dateOfBirth(signUpDto.getDateOfBirth())
+                .emergencyContactName(signUpDto.getEmergencyContactName())
+                .emergencyContactPhone(signUpDto.getEmergencyContactPhone())
+                .build();
     }
 }

@@ -112,6 +112,11 @@ public class ClinicUserServiceImpl implements ClinicUserService {
 
     }
 
+    @Override
+    public boolean usernameAlreadyExists(String username) {
+        return userRepository.findByUsername(username).isPresent();
+    }
+
     public UserDetailsImpl loadUserByUsername(SignInDto signInDto) throws UsernameNotFoundException {
         return userRepository.findByUsername(signInDto.getUsername())
                 .map(user -> {

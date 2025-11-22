@@ -10,4 +10,5 @@ public interface ClinicUserService extends BaseService<ClinicUser>, UserDetailsS
     UserDetailsImpl loadUserByUsername(SignInDto signInDto) throws UsernameNotFoundException;
     ClinicUser getCurrentUser();
     boolean isCurrentUser(ClinicUser user);
+    boolean usernameAlreadyExists(String username);
 }

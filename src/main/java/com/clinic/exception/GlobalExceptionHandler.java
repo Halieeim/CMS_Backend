@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
+import jakarta.persistence.EntityExistsException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -83,6 +84,13 @@ public class GlobalExceptionHandler {
         response.put("validationErrors", errors);
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+    }
+
+    @ExceptionHandler(EntityExistsException.class)
+    public ResponseEntity<Map<String, Object>> handleEntityAlreadyExists(EntityExistsException ex, WebRequest request) {
+        logger.error("EntityAlreadyExistsException occurred", ex);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(buildErrorResponse("Entity Already Exists: " + ex.getMessage(), HttpStatus.BAD_REQUEST, request));
     }
 
     @ExceptionHandler(Exception.class)
